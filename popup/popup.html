@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>Getting Started Extension's Popup</title>
+    <style>
+      body {
+        min-width: 357px;
+        overflow-x: hidden;
+      }
+    </style>
+    <!--
+      - JavaScript and HTML must be in separate files: see our Content Security
+      - Policy documentation[1] for details and explanation.
+      -
+      - [1]: http://developer.chrome.com/extensions/contentSecurityPolicy.html
+     -->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  </head>
+  <body>
+    <main>
+      <img src="../images/icon48.png" width="48" height="48" alt="Macro Manager" />
+      <h1>Wellcome to Macro Manager!</h1>
+      <p>Macro Manager is a chrome extension that allows you to record and play macros.</p>
+      <p>Click the button below to start recording a macro.</p>
+    </main>
+    <div id="status"></div>
+    <div id="buttonDiv">
+      <button id="btnMessage" class="button">test</button>
+      <button id="btnStartRecord" class="button">기록</button>
+      <button id="btnLoadRecord" class="button">기록 조회</button>
+      <button id="btnStopRecord" class="button">기록 종료</button>
+      <button id="btnRewind" class="button">리와인드</button>
+    </div>
+    <script src="popup.js" type="text/javaScript"></script>
+  </body>
+</html>
