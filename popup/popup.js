@@ -1,24 +1,4 @@
 // Send to Content Script
-// Greeting
-document.getElementById("btnMessage").addEventListener("click", () => {
-  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-    const tab = tabs[0];
-    chrome.tabs.sendMessage(
-      tab.id,
-      {
-        type: "greeting",
-        payload: {
-          message:
-            "[Popup 발신] => Content Script. 방식 chrome.tabs.sendMessage",
-        },
-      },
-      response => {
-        console.log(response);
-      }
-    );
-  });
-});
-
 // Start Record Button
 document.getElementById("btnStartRecord").addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {

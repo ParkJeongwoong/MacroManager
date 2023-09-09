@@ -17,21 +17,6 @@ const sendMessageToBackground = (type, payload) => {
   });
 };
 
-const checkSystem = async () => {
-  console.log(
-    "[ContentScript 수신] <= Popup. chrome.tabs.sendMessage: " +
-      request.payload.message
-  );
-
-  const response = await sendMessageToBackground("greeting", {
-    message: "[ContentScript 발신] => Background. 응답은 sendResponse",
-  });
-  console.log(
-    "[ContentScript 발신] <= Background. message received by sendResponse: " +
-      response.message
-  );
-};
-
 const sendRecordStart = async () => {
   const url = window.location.href;
   console.log(url);
@@ -43,8 +28,7 @@ const sendRecordStart = async () => {
 const sendRecordLoad = async () => {
   console.log("Load Record");
   const response = await sendMessageToBackground("recordLoad", {});
-  console.log("Load Record Response : " + response.data.startUrl);
-  console.log(response.data.clicks);
+  console.log(response.data.logs);
 };
 
 const sendRecordStop = async () => {
@@ -76,28 +60,73 @@ const getSelector = el => {
   return path.join(" > ");
 };
 
-const handleClick = e => {
-  const { clientX, clientY } = e;
-  console.log(clientX, clientY);
-  console.log(e.target);
+const onClick = e => {
+  console.log(e);
   const selector = getSelector(e.target);
-  console.log(selector);
-  sendMessageToBackground("click", {
+  sendMessageToBackground("log", {
+    type: "click",
     selector,
-    clientX,
-    clientY,
+    clientX: e.clientX,
+    clientY: e.clientY,
     url: window.location.href,
+    value: e.target.value,
   });
+};
+
+const onType = e => {
+  console.log(e);
+  const { key } = e;
+  const selector = getSelector(e.target);
+  sendMessageToBackground("log", {
+    type: "type",
+    selector,
+    key,
+    url: window.location.href,
+    value: e.target.value,
+  });
+};
+
+const handleClick = log => {
+  console.log("click BACK!!");
+  const selector = log.selector;
+  const element = document.querySelector(selector);
+  if (!element) {
+    return false;
+  }
+  element.value = log.value;
+  element.click();
+  return true;
+};
+
+const handleType = log => {
+  console.log("type BACK!!");
+  const selector = log.selector;
+  const element = document.querySelector(selector);
+  // Enter case
+  if (log.key === "Enter") {
+    element.value = log.value;
+    if (!element) {
+      return false;
+    }
+    const event = new KeyboardEvent("keydown", {
+      key: "Enter",
+      code: "Enter",
+      keyCode: 13,
+      which: 13,
+    });
+    element.dispatchEvent(event);
+  } else if (log.key === "Backspace") {
+    element.value = log.value.slice(0, -1);
+  } else {
+    element.value += log.key;
+  }
+  return true;
 };
 
 // Events
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     // from Popup
-    case "greeting":
-      checkSystem();
-      break;
-
     case "recordStart":
       sendRecordStart();
       break;
@@ -116,15 +145,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       window.location.href = request.payload.url;
       break;
 
-    case "reClick":
-      console.log("reClick!!");
-      const selector = request.payload.selector;
-      const element = document.querySelector(selector);
-      element.click();
+    case "logBack":
+      // 주소 불일치 시 Redirect
+      if (request.payload.log.url !== window.location.href) {
+        console.log("redirect pause");
+        sendResponse({ pause: true });
+        window.location.href = request.payload.log.url;
+      }
+      switch (request.payload.log.type) {
+        case "click":
+          if (!handleClick(request.payload.log)) {
+            console.log("click pause");
+            sendResponse({ pause: true });
+          }
+          break;
+        case "type":
+          if (!handleType(request.payload.log)) {
+            console.log("type pause");
+            sendResponse({ pause: true });
+          }
+          break;
+      }
+      sendResponse({ pause: false });
       break;
   }
 
   return true;
 });
 
-document.addEventListener("click", handleClick);
+document.addEventListener("click", onClick);
+document.addEventListener("keydown", onType);

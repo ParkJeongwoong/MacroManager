@@ -21,9 +21,8 @@ const recordStart = url => {
 };
 
 const recordLoad = async callback => {
-  const selectors = logs.map(log => log.selector);
   chrome.storage.local.get("startUrl", result => {
-    callback(result.startUrl, selectors);
+    callback(result.startUrl, logs);
   });
 };
 
@@ -39,9 +38,30 @@ const rewindLogs = async () => {
     logs.forEach((log, index) => {
       // sleep 1s
       setTimeout(async () => {
-        const response = await sendMessageToTab(tab, "reClick", {
-          selector: log.selector,
+        const response = await sendMessageToTab(tab, "logBack", {
+          log,
         });
+        // pause인 경우 1초에 한 번씩 다시 보내기
+        if (!response || response.pause) {
+          let fail = true;
+          let num = 1;
+          let interval = setInterval(async () => {
+            const response = await sendMessageToTab(tab, "logBack", {
+              log,
+            });
+            if (!response.pause) {
+              fail = false;
+              clearInterval(interval);
+            } else if (num > 10) {
+              clearInterval(interval);
+            }
+            num++;
+          }, 1000);
+          if (fail) {
+            console.log("fail to rewind");
+            return;
+          }
+        }
       }, 1000 * (index + 1));
     });
   });
@@ -59,17 +79,6 @@ const clearLogs = () => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.type) {
     // from Content Script
-    case "greeting":
-      console.log(
-        "[Background 수신] <= ContentScript. message received: " +
-          request.payload.message
-      );
-      const returnMessage = `[Background 발신] => ContentScript. 응답 메시지. 방식 sendResponse`;
-      sendResponse({
-        message: returnMessage,
-      });
-      break;
-
     case "recordStart":
       recordStart(request.payload.url);
       sendResponse({
@@ -83,12 +92,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case "recordLoad":
-      recordLoad((startUrl, clicks) =>
+      recordLoad((startUrl, logs) => {
         sendResponse({
           message: "[Background 발신] Load URL Response",
-          data: { startUrl, clicks },
-        })
-      );
+          data: { startUrl, logs },
+        });
+      });
       break;
 
     case "recordStop":
@@ -96,7 +105,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       clearLogs();
       break;
 
-    case "click":
+    case "log":
       if (flag) {
         saveLog(request.payload);
       }
