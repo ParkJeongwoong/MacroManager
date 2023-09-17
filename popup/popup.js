@@ -15,14 +15,14 @@ document.getElementById("btnStartRecord").addEventListener("click", () => {
   });
 });
 
-// Load Record Button
-document.getElementById("btnLoadRecord").addEventListener("click", () => {
+// Read Record Button
+document.getElementById("btnReadRecord").addEventListener("click", () => {
   chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
     const tab = tabs[0];
     chrome.tabs.sendMessage(
       tab.id,
       {
-        type: "recordLoad",
+        type: "recordRead",
       },
       response => {
         console.log(response);
@@ -47,6 +47,22 @@ document.getElementById("btnStopRecord").addEventListener("click", () => {
   });
 });
 
+// Delete Record Button
+document.getElementById("btnDeleteRecord").addEventListener("click", () => {
+  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+    const tab = tabs[0];
+    chrome.tabs.sendMessage(
+      tab.id,
+      {
+        type: "recordDelete",
+      },
+      response => {
+        console.log(response);
+      }
+    );
+  });
+});
+
 // Rewind Click Button
 document.getElementById("btnRewind").addEventListener("click", () => {
   chrome.runtime.sendMessage(
@@ -54,5 +70,29 @@ document.getElementById("btnRewind").addEventListener("click", () => {
       type: "rewind",
     },
     response => {}
+  );
+});
+
+// Save Record Button
+document.getElementById("btnSaveRecord").addEventListener("click", () => {
+  chrome.runtime.sendMessage(
+    {
+      type: "recordSave",
+    },
+    response => {
+      console.log(response.message);
+    }
+  );
+});
+
+// Load Record Button
+document.getElementById("btnLoadRecord").addEventListener("click", () => {
+  chrome.runtime.sendMessage(
+    {
+      type: "recordLoad",
+    },
+    response => {
+      console.log(response);
+    }
   );
 });
